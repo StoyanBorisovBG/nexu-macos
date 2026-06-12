@@ -1,21 +1,27 @@
 #!/bin/bash
-# NexU 1.22 — инсталатор за macOS (Apple Silicon и Intel)
+# NexU — инсталатор за macOS (Apple Silicon и Intel)
 #
-# Поставете този файл (заедно с останалите .command файлове) в папката на
-# официалния NexU пакет от портала (там, където е nexu.jar) и го стартирайте:
-#   cd <папката с nexu.jar> && bash install-macos.command
+# Самодостатъчен: ако nexu.jar липсва до скрипта, изтегля официалния NexU
+# пакет от release сървъра на Nowina (същия, към който линкват порталите)
+# с проверка на SHA-256. Може и да поставите скриптовете в папката на вече
+# изтеглен официален пакет — тогава се ползва вашият nexu.jar.
+#
+# Стартиране (изтеглените от интернет скриптове са под карантина — затова
+# през Terminal):
+#   bash install-macos.command
 #
 # Какво прави:
-#   1. Изтегля Java 8 runtime с JavaFX (BellSoft Liberica JRE 8 "Full", x86_64)
+#   1. Ако няма nexu.jar — изтегля официалния пакет (SHA-256 проверка).
+#   2. Изтегля Java 8 runtime с JavaFX (BellSoft Liberica JRE 8 "Full", x86_64)
 #      в ./java-macos. Изисква се x86_64: вграденият в nexu.jar JNA (2018 г.)
 #      няма arm64 библиотека за macOS, затова на Apple Silicon NexU работи
 #      през Rosetta 2.
-#   2. Адаптира JRE-то за съвременен macOS (JavaNativeFoundation пач).
-#   3. Създава конфигурация за macOS (без блокиращи диалози, без мъртвите
-#      сървъри на Nowina, с включен advanced mode за настройка на картата).
-#   4. Сглобява самостоятелно приложение NexU.app (със собствен JRE и nexu.jar).
-#   5. По желание: автоматично стартиране при вход (LaunchAgent).
-#   6. Стартира NexU и проверява, че отговаря на http://localhost:9795.
+#   3. Адаптира JRE-то за съвременен macOS (JavaNativeFoundation пач).
+#   4. Създава конфигурация за macOS (без блокиращи диалози, без висящите
+#      мрежови услуги на Nowina, с включен advanced mode за настройка на картата).
+#   5. Сглобява самостоятелно приложение NexU.app (със собствен JRE и nexu.jar).
+#   6. По желание: автоматично стартиране при вход (LaunchAgent).
+#   7. Стартира NexU и проверява, че отговаря на http://localhost:9795.
 #
 # Опции:
 #   --autostart    включва автостарт без питане
@@ -31,10 +37,14 @@ LAUNCH_AGENT="$HOME/Library/LaunchAgents/lu.nowina.nexu.plist"
 JRE_URL="https://github.com/bell-sw/Liberica/releases/download/8u492+9/bellsoft-jre8u492+9-macos-amd64-full.tar.gz"
 JRE_SHA1="4d8cf0b799f6cf51125be25ea4add42408ac7a32"
 
-# SHA-256 на официалния nexu.jar 1.22, разпространяван от egov.bg.
-# При различен jar инсталацията продължава с предупреждение (други портали
-# разпространяват свои билдове на NexU).
-NEXU_JAR_SHA256="2594c43e8fc9417a61981751d8816bb50bd0b88c69b2ce01e5ae5b12a3af7d5a"
+# Официален NexU пакет (release сървърът на Nowina, линкван от порталите).
+NEXU_BUNDLE_URL="https://lab.nowina.solutions/nexu-releases/nexu-bundle-1.24.zip"
+NEXU_BUNDLE_ZIP_SHA256="785c178ed83ba7852337d90a84c47dab2e135c2112d5f5b1148430fa017550d8"
+
+# Познати официални nexu.jar билдове (SHA-256). При друг jar инсталацията
+# продължава с предупреждение (някои портали разпространяват свои билдове).
+JAR_SHA_122="2594c43e8fc9417a61981751d8816bb50bd0b88c69b2ce01e5ae5b12a3af7d5a"
+JAR_SHA_124="48ae478c7d309dfacecc049c3d0c53473d92ecb7b0c0a886c50ab32f79761256"
 
 AUTOSTART="ask"
 LAUNCH_AT_END=1
@@ -47,25 +57,10 @@ for arg in "$@"; do
   esac
 done
 
-echo "==> NexU 1.22 — инсталация за macOS"
-
-if [ ! -f "$BUNDLE_DIR/nexu.jar" ]; then
-  echo "ГРЕШКА: nexu.jar не е намерен в $BUNDLE_DIR"
-  echo "Поставете файловете от това репо в папката на официалния NexU пакет"
-  echo "(изтегля се от портала за е-услуги) и стартирайте отново."
-  exit 1
-fi
-
-ACTUAL_JAR_SHA="$(shasum -a 256 "$BUNDLE_DIR/nexu.jar" | awk '{print $1}')"
-if [ "$ACTUAL_JAR_SHA" != "$NEXU_JAR_SHA256" ]; then
-  echo "ВНИМАНИЕ: nexu.jar се различава от официалния пакет на egov.bg (NexU 1.22)."
-  echo "  очакван SHA-256: $NEXU_JAR_SHA256"
-  echo "  намерен SHA-256: $ACTUAL_JAR_SHA"
-  echo "Продължавам — но скриптът е тестван само с официалния билд 1.22."
-fi
+echo "==> NexU — инсталация за macOS"
 
 if [ "$(uname -m)" = "arm64" ] && ! arch -x86_64 /usr/bin/true 2>/dev/null; then
-  echo "ГРЕШКА: Необходима е Rosetta 2 (NexU 1.22 изисква x86_64 Java)."
+  echo "ГРЕШКА: Необходима е Rosetta 2 (NexU изисква x86_64 Java)."
   echo "Инсталирайте я с:  softwareupdate --install-rosetta --agree-to-license"
   echo "и стартирайте инсталатора отново."
   exit 1
@@ -82,6 +77,39 @@ fi
 
 TMP="$(mktemp -d /tmp/nexu-install.XXXXXX)"
 trap 'rm -rf "$TMP"' EXIT
+
+if [ ! -f "$BUNDLE_DIR/nexu.jar" ]; then
+  echo "==> nexu.jar не е намерен — изтегляне на официалния NexU пакет (~85 MB) ..."
+  echo "    Източник: $NEXU_BUNDLE_URL"
+  curl -fL --progress-bar -o "$TMP/nexu-bundle.zip" "$NEXU_BUNDLE_URL"
+  ZIP_SHA="$(shasum -a 256 "$TMP/nexu-bundle.zip" | awk '{print $1}')"
+  if [ "$ZIP_SHA" != "$NEXU_BUNDLE_ZIP_SHA256" ]; then
+    echo "ГРЕШКА: SHA-256 на изтегления пакет не съвпада с очаквания:"
+    echo "  очакван: $NEXU_BUNDLE_ZIP_SHA256"
+    echo "  получен: $ZIP_SHA"
+    echo "От съображения за сигурност инсталацията спира (компонентът подписва с КЕП)."
+    exit 1
+  fi
+  mkdir -p "$TMP/bundle"
+  unzip -q "$TMP/nexu-bundle.zip" -d "$TMP/bundle"
+  JAR_SRC="$(find "$TMP/bundle" -name nexu.jar -print -quit)"
+  if [ -z "$JAR_SRC" ]; then
+    echo "ГРЕШКА: nexu.jar не е намерен в изтегления пакет."
+    exit 1
+  fi
+  cp "$JAR_SRC" "$BUNDLE_DIR/nexu.jar"
+  echo "==> nexu.jar (официален билд) е поставен в $BUNDLE_DIR"
+fi
+
+ACTUAL_JAR_SHA="$(shasum -a 256 "$BUNDLE_DIR/nexu.jar" | awk '{print $1}')"
+case "$ACTUAL_JAR_SHA" in
+  "$JAR_SHA_122"|"$JAR_SHA_124") : ;;
+  *)
+    echo "ВНИМАНИЕ: nexu.jar не съвпада с познатите официални билдове (1.22, 1.24)."
+    echo "  намерен SHA-256: $ACTUAL_JAR_SHA"
+    echo "Продължавам — но скриптът е тестван само с официалните билдове."
+    ;;
+esac
 
 echo "==> Изтегляне на Java 8 + JavaFX (~90 MB, BellSoft Liberica) ..."
 curl -fL --progress-bar -o "$TMP/jre.tar.gz" "$JRE_URL"
@@ -136,7 +164,7 @@ CFG="$BUNDLE_DIR/macos-config/nexu-config.properties"
 if ! unzip -p "$BUNDLE_DIR/nexu.jar" nexu-config.properties > "$CFG" 2>/dev/null; then
   rm -f "$CFG"
   echo "ГРЕШКА: този билд на nexu.jar няма nexu-config.properties — несъвместим е"
-  echo "с този инсталатор. Ползвайте официалния пакет NexU 1.22 от egov.bg."
+  echo "с този инсталатор. Ползвайте официален пакет NexU 1.22/1.24."
   exit 1
 fi
 cat >> "$CFG" <<'PROPS'
@@ -147,7 +175,8 @@ cat >> "$CFG" <<'PROPS'
 # старт идваше от JavaFX preloader-а, който е премахнат от стартера.
 enable_pop_ups=true
 advanced_mode_available=true
-# Сървърът lab.nowina.solutions вече не съществува — без мрежови опити към него
+# Услугата /nexu на lab.nowina.solutions не отговаря (заявките висят и бавеха
+# старта с ~45 сек) — изключваме базата от интернет и телеметрията.
 enable_database_web_loader=false
 send_anonymous_info_to_proxy=false
 PROPS
@@ -189,7 +218,10 @@ exec "$CONTENTS/Resources/jre/bin/java" \
 LAUNCHER
 chmod +x "$APP_DIR/Contents/MacOS/NexU"
 
-cat > "$APP_DIR/Contents/Info.plist" <<'PLIST'
+NEXU_VER="$(unzip -p "$BUNDLE_DIR/nexu.jar" META-INF/maven/lu.nowina.apps/nexu-standalone/pom.properties 2>/dev/null | grep '^version=' | cut -d= -f2 || true)"
+[ -n "$NEXU_VER" ] || NEXU_VER="1.x"
+
+cat > "$APP_DIR/Contents/Info.plist" <<PLIST
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
@@ -201,9 +233,9 @@ cat > "$APP_DIR/Contents/Info.plist" <<'PLIST'
 	<key>CFBundleIdentifier</key>
 	<string>lu.nowina.nexu</string>
 	<key>CFBundleVersion</key>
-	<string>1.22</string>
+	<string>$NEXU_VER</string>
 	<key>CFBundleShortVersionString</key>
-	<string>1.22</string>
+	<string>$NEXU_VER</string>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleExecutable</key>
