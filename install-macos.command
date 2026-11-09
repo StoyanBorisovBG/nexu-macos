@@ -38,8 +38,8 @@ JRE_URL="https://github.com/bell-sw/Liberica/releases/download/8u492+9/bellsoft-
 JRE_SHA1="4d8cf0b799f6cf51125be25ea4add42408ac7a32"
 
 # Официален NexU пакет (release сървърът на Nowina, линкван от порталите).
-NEXU_BUNDLE_URL="https://lab.nowina.solutions/nexu-releases/nexu-bundle-1.24.zip"
-NEXU_BUNDLE_ZIP_SHA256="785c178ed83ba7852337d90a84c47dab2e135c2112d5f5b1148430fa017550d8"
+NEXU_BUNDLE_URL="https://code.europa.eu/qualifications-courses-and-credentials/european-digital-credentials/-/raw/master/nexu-bundle-1.22.zip"
+NEXU_BUNDLE_ZIP_SHA256="bb10a13c3c3a31a1baaf394961510680f65fafe6617abdf71fe409a77118d9db"
 
 # Познати официални nexu.jar билдове (SHA-256). При друг jar инсталацията
 # продължава с предупреждение (някои портали разпространяват свои билдове).
